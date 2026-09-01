@@ -15,8 +15,17 @@ interface Props {
   onAddTimer: (sec: number) => void;
 }
 
+const FLAVOR_LINES = [
+  'Recovering Shadow Energy…',
+  'Consolidating Muscle Fibers…',
+  'Recalibrating Hunter Mana…',
+  'Analyzing Performance Telemetry…',
+  'Synthesizing Stat Progression…',
+];
+
 export default function RestTimer({ totalSeconds, onComplete, onSkip, onAddTimer }: Props) {
   const [timeLeft, setTimeLeft] = useState(totalSeconds);
+  const [flavorIndex, setFlavorIndex] = useState(0);
   const progress = useSharedValue(1);
 
   // Restart animation and timer when totalSeconds changes
@@ -24,6 +33,7 @@ export default function RestTimer({ totalSeconds, onComplete, onSkip, onAddTimer
     setTimeLeft(totalSeconds);
     progress.value = 1;
     progress.value = withTiming(0, { duration: totalSeconds * 1000, easing: Easing.linear });
+    setFlavorIndex(Math.floor(Math.random() * FLAVOR_LINES.length));
   }, [totalSeconds]);
 
   useEffect(() => {
@@ -53,6 +63,7 @@ export default function RestTimer({ totalSeconds, onComplete, onSkip, onAddTimer
 
   return (
     <View style={styles.container}>
+      <Text style={styles.flavorText}>{FLAVOR_LINES[flavorIndex]}</Text>
       <View style={styles.timerRing}>
         <Svg width={radius * 2 + strokeWidth} height={radius * 2 + strokeWidth} style={styles.svg}>
           {/* Background circle */}
@@ -104,6 +115,13 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     paddingVertical: 16,
+  },
+  flavorText: {
+    fontFamily: SystemTheme.typography.terminal.fontFamily,
+    fontSize: 11,
+    color: SystemTheme.colors.primary,
+    marginBottom: 12,
+    letterSpacing: 1,
   },
   timerRing: {
     position: 'relative',

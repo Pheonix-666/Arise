@@ -87,7 +87,9 @@ export default function ExerciseLibrary({ navigation }: Props) {
                 <SystemWindow style={styles.exerciseCard}>
                   <View style={styles.cardHeader}>
                     <TerminalText style={styles.exName}>{ex.name}</TerminalText>
-                    <Text style={styles.exDifficulty}>{ex.difficulty.toUpperCase()}</Text>
+                    <Text style={styles.exDifficulty}>
+                      {ex.difficulty === 'Beginner' ? 'E-RANK' : ex.difficulty === 'Intermediate' ? 'C-RANK' : 'A-RANK'}
+                    </Text>
                   </View>
                   
                   <View style={styles.tagRow}>

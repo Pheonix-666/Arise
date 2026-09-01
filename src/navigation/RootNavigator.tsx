@@ -14,6 +14,7 @@ import CustomProgramBuilder from '../screens/fitness/CustomProgramBuilder';
 import WorkoutSession from '../screens/fitness/WorkoutSession';
 import SessionSummary from '../screens/fitness/SessionSummary';
 import SessionDetail from '../screens/fitness/SessionDetail';
+import ShadowArmy from '../screens/fitness/ShadowArmy';
 import BodyStats from '../screens/fitness/BodyStats';
 
 // Task & Monarch
@@ -44,6 +45,7 @@ export default function RootNavigator() {
         <Stack.Screen name="WorkoutSession" component={WorkoutSession} />
         <Stack.Screen name="SessionSummary" component={SessionSummary} />
         <Stack.Screen name="SessionDetail" component={SessionDetail} />
+        <Stack.Screen name="ShadowArmy" component={ShadowArmy} />
         <Stack.Screen name="BodyStats" component={BodyStats} />
 
         {/* Task & Monarch Modules */}

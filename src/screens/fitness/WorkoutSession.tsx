@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, Text, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../types';
+import { RootStackParamList, SetLog } from '../../types';
 import ScanlineBackground from '../../components/system/ScanlineBackground';
 import SystemWindow from '../../components/system/SystemWindow';
 import TerminalText from '../../components/system/TerminalText';
@@ -12,6 +12,7 @@ import { SystemTheme } from '../../theme/SystemTheme';
 import { wp, hp } from '../../utils/responsive';
 import { PROGRAMS } from '../../data/programs';
 import { EXERCISE_BY_ID } from '../../data/exercises';
+import SystemToast from '../../components/system/SystemToast';
 import { useStore } from '../../store/useStore';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'WorkoutSession'>;
@@ -32,17 +33,33 @@ export default function WorkoutSession({ route, navigation }: Props) {
   const [showRestTimer, setShowRestTimer] = useState(false);
   const [restSeconds, setRestSeconds] = useState(60);
 
+  // System Feed Toast State
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastVisible, setToastVisible] = useState(false);
+
+  // Combo & Momentum State (Local component state)
+  const [comboCount, setComboCount] = useState(0);
+
+  // Awakening Dialog for First Session
+  const isFirstSession = store.fitnessProfile.totalSessionsLogged === 0;
+  const [showAwakeningModal, setShowAwakeningModal] = useState(isFirstSession);
+
   // Initialize active session on mount
   useEffect(() => {
     store.startWorkout(programId, dayPlan?.name);
   }, []);
+
+  const triggerToast = (msg: string) => {
+    setToastMessage(msg);
+    setToastVisible(true);
+  };
 
   const currentPlannedEx = plannedExercises[currentExIndex];
   const exerciseDef = currentPlannedEx ? EXERCISE_BY_ID[currentPlannedEx.exerciseId] : null;
 
   // Filter logged sets for the current exercise
   const loggedSets = store.activeSession.sets.filter(
-    s => s.exerciseId === currentPlannedEx?.exerciseId
+    (s: SetLog) => s.exerciseId === currentPlannedEx?.exerciseId
   );
 
   // Get Ghost values from PRs (as a simple heuristic for last session)
@@ -57,11 +74,32 @@ export default function WorkoutSession({ route, navigation }: Props) {
     
     if (isNaN(w) && isNaN(r)) return; // need at least something
 
+    const currentScore = (w || 0) * (r || 0);
+    const prevBestScore = (pr?.bestWeight || 0) * (pr?.bestReps || 0);
+
+    // Check if PR hit mid-set
+    const isPrHit = currentScore > prevBestScore && prevBestScore > 0;
+
     store.logSet({
       exerciseId: exerciseDef.id,
       weight: isNaN(w) ? undefined : w,
       reps: isNaN(r) ? undefined : r,
     });
+
+    const newCombo = comboCount + 1;
+    setComboCount(newCombo);
+
+    // Calculate approximate XP gained for set
+    const primaryStat = Object.keys(exerciseDef.statWeighting)[0] || 'STR';
+    const estimatedXp = Math.round(10 * (1 + Math.min(newCombo * 0.1, 0.5)));
+
+    if (isPrHit) {
+      triggerToast(`BOSS KILL DETECTED — NEW PR: ${w}kg × ${r}!`);
+    } else if (newCombo > 2) {
+      triggerToast(`COMBO x${(1 + Math.min(newCombo * 0.1, 0.5)).toFixed(1)}! +${estimatedXp} ${primaryStat} XP Gained`);
+    } else {
+      triggerToast(`+${estimatedXp} ${primaryStat} XP Gained (${primaryStat} progress updated)`);
+    }
 
     setWeightInput('');
     setRepsInput('');
@@ -126,13 +164,28 @@ export default function WorkoutSession({ route, navigation }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScanlineBackground />
+      <SystemToast
+        message={toastMessage}
+        visible={toastVisible}
+        onDismiss={() => setToastVisible(false)}
+      />
+
       <SafeAreaView style={styles.safeArea}>
         
-
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           
           <SystemWindow style={styles.exHeaderCard}>
-            <Text style={styles.muscleGroupText}>{exerciseDef.muscleGroup.toUpperCase()}</Text>
+            <View style={styles.headerTopRow}>
+              <Text style={styles.muscleGroupText}>{exerciseDef.muscleGroup.toUpperCase()}</Text>
+              {comboCount > 1 && (
+                <View style={styles.comboBadge}>
+                  <TerminalText style={styles.comboText} glow>
+                    🔥 COMBO x{(1 + Math.min(comboCount * 0.1, 0.5)).toFixed(1)}
+                  </TerminalText>
+                </View>
+              )}
+            </View>
+
             <TerminalText style={styles.exNameTitle} glow>{exerciseDef.name}</TerminalText>
             
             <View style={styles.exNavRow}>
@@ -167,7 +220,7 @@ export default function WorkoutSession({ route, navigation }: Props) {
               </View>
 
               {/* Previously Logged Sets (this session) */}
-              {loggedSets.map((s, idx) => (
+              {loggedSets.map((s: SetLog, idx: number) => (
                 <View key={idx} style={styles.loggedRow}>
                   <Text style={[styles.loggedText, { flex: 0.5 }]}>{idx + 1}</Text>
                   <Text style={[styles.loggedText, { flex: 1 }]}>{s.weight || '-'}</Text>
@@ -242,6 +295,25 @@ export default function WorkoutSession({ route, navigation }: Props) {
             <TerminalText style={styles.finishBtn} glow>[ FINISH ]</TerminalText>
           </TouchableOpacity>
         </View>
+
+        {/* Awakening Modal Overlay for first session */}
+        {showAwakeningModal && (
+          <View style={styles.awakeningOverlay}>
+            <SystemWindow style={styles.awakeningWindow}>
+              <TerminalText style={styles.awakeningTitle} glow>[ SYSTEM INITIALIZED — AWAKENING ]</TerminalText>
+              <Text style={styles.awakeningBody}>
+                Welcome, Hunter. The System has selected you to undergo physical re-awakening. 
+                Your workouts will directly convert into Stat Points and rank progression. 
+                Execute your first protocol to forge your path.
+              </Text>
+              <SystemButton
+                title="> ACKNOWLEDGE & BEGIN PROTOCOL_"
+                onPress={() => setShowAwakeningModal(false)}
+                style={{ marginTop: 16 }}
+              />
+            </SystemWindow>
+          </View>
+        )}
       </SafeAreaView>
     </KeyboardAvoidingView>
   );
@@ -250,6 +322,51 @@ export default function WorkoutSession({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: SystemTheme.colors.background },
   safeArea: { flex: 1 },
+
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 8,
+  },
+  comboBadge: {
+    borderWidth: 1,
+    borderColor: SystemTheme.colors.primary,
+    backgroundColor: 'rgba(0, 242, 255, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  comboText: {
+    fontSize: 11,
+    color: SystemTheme.colors.primary,
+    fontWeight: 'bold',
+  },
+
+  awakeningOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: wp(6),
+    zIndex: 9999,
+  },
+  awakeningWindow: {
+    padding: wp(6),
+    width: '100%',
+  },
+  awakeningTitle: {
+    fontSize: 13,
+    color: SystemTheme.colors.primary,
+    marginBottom: 12,
+    letterSpacing: 1,
+  },
+  awakeningBody: {
+    fontFamily: SystemTheme.typography.body.fontFamily,
+    color: SystemTheme.colors.onBackground,
+    fontSize: 13,
+    lineHeight: 20,
+  },
   
   bottomHeaderBar: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',

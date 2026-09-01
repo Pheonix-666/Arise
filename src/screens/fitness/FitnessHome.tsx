@@ -71,36 +71,63 @@ export default function FitnessHome({ navigation }: Props) {
             </SystemWindow>
           </Animated.View>
 
-          {/* TODAY'S SESSION */}
+          {/* DETECTED GATE / TODAY'S SESSION */}
           <Animated.View entering={FadeInDown.delay(200).springify()}>
             <SystemWindow style={[styles.window, { marginTop: hp(2) }]}>
-              <TerminalText style={styles.sectionTitle} glow>DAILY PROTOCOL</TerminalText>
-              
-              {activeProgram && currentDay ? (
-                <View style={styles.sessionCard}>
-                  <Text style={styles.programName}>{activeProgram.name}</Text>
-                  <Text style={styles.dayName}>Week {fitnessProfile.currentProgramWeek} • {currentDay.name}</Text>
-                  
-                  {currentDay.isRestDay ? (
-                    <Text style={styles.restText}>Recovery protocol active. Rest is required for stat consolidation.</Text>
-                  ) : (
-                    <Text style={styles.exerciseCount}>{currentDay.exercises.length} Exercises Scheduled</Text>
-                  )}
+              {activeProgram && currentDay && !currentDay.isRestDay ? (
+                <>
+                  <View style={styles.gateHeaderRow}>
+                    <TerminalText style={styles.sectionTitle} glow>
+                      [ DETECTED GATE: {activeProgram.tier.toUpperCase()}-TIER ]
+                    </TerminalText>
+                    <View style={styles.threatBadge}>
+                      <Text style={styles.threatText}>THREAT: {activeProgram.difficulty.toUpperCase()}</Text>
+                    </View>
+                  </View>
 
-                  <SystemButton 
-                    title={currentDay.isRestDay ? "> SKIP REST DAY_" : "> START PROTOCOL_"}
-                    onPress={() => {
-                      if (currentDay.isRestDay) {
-                        useStore.getState().advanceProgramDay();
-                      } else {
+                  <View style={styles.sessionCard}>
+                    <Text style={styles.programName}>{activeProgram.name}</Text>
+                    <Text style={styles.dayName}>
+                      Week {fitnessProfile.currentProgramWeek} • {currentDay.name}
+                    </Text>
+
+                    <View style={styles.gateMetricsRow}>
+                      <Text style={styles.exerciseCount}>
+                        {currentDay.exercises.length} Boss Raids Scheduled
+                      </Text>
+                      <Text style={styles.weeklyClearText}>
+                        Weekly Gate Clear: {fitnessProfile.currentProgramDayIndex % activeProgram.daysPerWeek}/{activeProgram.daysPerWeek}
+                      </Text>
+                    </View>
+
+                    <SystemButton 
+                      title="> ENTER GATE & START PROTOCOL_"
+                      onPress={() => {
                         navigation.navigate('WorkoutSession', { programId: activeProgram.id, dayIndex: fitnessProfile.currentProgramDayIndex });
-                      }
-                    }}
-                    style={styles.startBtn}
-                  />
-                </View>
+                      }}
+                      style={styles.startBtn}
+                    />
+                  </View>
+                </>
+              ) : activeProgram && currentDay && currentDay.isRestDay ? (
+                <>
+                  <TerminalText style={styles.sectionTitle} glow>[ RECOVERY PROTOCOL ]</TerminalText>
+                  <View style={styles.sessionCard}>
+                    <Text style={styles.programName}>{activeProgram.name}</Text>
+                    <Text style={styles.dayName}>Week {fitnessProfile.currentProgramWeek} • Rest Day</Text>
+                    <Text style={styles.restText}>Recovery protocol active. Rest is required for stat consolidation.</Text>
+                    <SystemButton 
+                      title="> SKIP REST DAY_"
+                      onPress={() => {
+                        useStore.getState().advanceProgramDay();
+                      }}
+                      style={styles.startBtn}
+                    />
+                  </View>
+                </>
               ) : (
                 <View style={styles.noProgramCard}>
+                  <TerminalText style={styles.sectionTitle} glow>DAILY PROTOCOL</TerminalText>
                   <Text style={styles.noProgramText}>No active training protocol detected.</Text>
                   <SystemButton 
                     title="> BROWSE PROGRAMS_"
@@ -110,6 +137,28 @@ export default function FitnessHome({ navigation }: Props) {
                 </View>
               )}
             </SystemWindow>
+          </Animated.View>
+
+          {/* SHADOW ARMY ENTRY CARD */}
+          <Animated.View entering={FadeInDown.delay(300).springify()}>
+            <TouchableOpacity 
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('ShadowArmy')}
+            >
+              <SystemWindow style={[styles.window, { marginTop: hp(2), borderColor: SystemTheme.colors.primary }]}>
+                <View style={styles.shadowCardHeader}>
+                  <View>
+                    <TerminalText style={styles.shadowTitle} glow>
+                      🌑 [ SHADOW ARMY ]
+                    </TerminalText>
+                    <Text style={styles.shadowSub}>
+                      {fitnessProfile.shadowRoster?.length || 0} Extracted Shadow Warriors Ready
+                    </Text>
+                  </View>
+                  <TerminalText style={styles.shadowArrow} glow>▸ VIEW ROSTER</TerminalText>
+                </View>
+              </SystemWindow>
+            </TouchableOpacity>
           </Animated.View>
 
 
@@ -238,7 +287,58 @@ const styles = StyleSheet.create({
     fontFamily: SystemTheme.typography.body.fontFamily,
     fontSize: 14,
     color: SystemTheme.colors.onBackground,
-    marginBottom: 24,
+    marginBottom: 4,
+  },
+  gateHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    borderBottomWidth: 1,
+    borderColor: SystemTheme.colors.primaryDim,
+    paddingBottom: 6,
+  },
+  threatBadge: {
+    borderWidth: 1,
+    borderColor: SystemTheme.colors.primary,
+    backgroundColor: 'rgba(0, 242, 255, 0.1)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  threatText: {
+    fontFamily: SystemTheme.typography.terminal.fontFamily,
+    fontSize: 10,
+    color: SystemTheme.colors.primary,
+  },
+  gateMetricsRow: {
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 4,
+  },
+  weeklyClearText: {
+    fontFamily: SystemTheme.typography.terminal.fontFamily,
+    fontSize: 11,
+    color: SystemTheme.colors.primary,
+  },
+  shadowCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  shadowTitle: {
+    fontSize: 14,
+    color: SystemTheme.colors.primary,
+    fontWeight: '700',
+  },
+  shadowSub: {
+    fontFamily: SystemTheme.typography.body.fontFamily,
+    fontSize: 12,
+    color: SystemTheme.colors.onSurfaceVariant,
+    marginTop: 2,
+  },
+  shadowArrow: {
+    fontSize: 12,
+    color: SystemTheme.colors.primary,
   },
   restText: {
     fontFamily: SystemTheme.typography.body.fontFamily,
@@ -261,5 +361,5 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
-
 });
+

@@ -35,6 +35,13 @@ export default function SessionSummary({ route, navigation }: Props) {
                 [ QUEST COMPLETE ]
               </TerminalText>
               <Text style={styles.subtitle}>Fitness Protocol Logged Successfully</Text>
+
+              {/* Rank Ascension Badge */}
+              <View style={styles.rankAscensionBadge}>
+                <TerminalText style={styles.rankAscensionText} glow>
+                  HUNTER RANK: {store.user.rank}-RANK (Lv.{store.user.level})
+                </TerminalText>
+              </View>
             </View>
           </Animated.View>
 
@@ -101,7 +108,20 @@ const styles = StyleSheet.create({
   
   header: { alignItems: 'center', marginBottom: hp(2) },
   questCompleteTitle: { fontSize: 24, color: SystemTheme.colors.primary, letterSpacing: 2, marginBottom: 8, textAlign: 'center' },
-  subtitle: { fontFamily: SystemTheme.typography.body.fontFamily, color: SystemTheme.colors.onSurfaceVariant, fontSize: 14, textAlign: 'center' },
+  subtitle: { fontFamily: SystemTheme.typography.body.fontFamily, color: SystemTheme.colors.onSurfaceVariant, fontSize: 14, textAlign: 'center', marginBottom: 12 },
+  rankAscensionBadge: {
+    borderWidth: 1,
+    borderColor: SystemTheme.colors.primary,
+    backgroundColor: 'rgba(0, 242, 255, 0.12)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 2,
+  },
+  rankAscensionText: {
+    fontSize: 12,
+    color: SystemTheme.colors.primary,
+    fontWeight: 'bold',
+  },
   
   xpCard: { padding: 24 },
   cardTitle: { fontSize: 16, color: SystemTheme.colors.primary, marginBottom: 20, textAlign: 'center' },

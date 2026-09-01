@@ -10,6 +10,7 @@ export type RootStackParamList = {
   WorkoutSession: { programId?: string; dayIndex?: number; exerciseIds?: string[] };
   SessionSummary: { sessionId: string };
   SessionDetail: { sessionId: string };
+  ShadowArmy: undefined;
   BodyStats: undefined;
   // Other modes
   TaskHome: undefined;
@@ -195,6 +196,8 @@ export interface UserFitnessProfile {
   lifetimeFitnessXp: number;
   stats: StatBlock;                 // cumulative stat points
   statXpProgress: StatBlock;        // XP toward next point per stat
+  shadowRoster: ShadowSoldier[];
+  lastGateClearWeek?: string;       // e.g. "2026-W35" or "P1_W1"
 }
 
 // ── Tasks / Quests ─────────────────────────────────────────────
@@ -211,11 +214,13 @@ export interface Quest {
   createdAt: number;
 }
 
-// ── Monarch Mode ───────────────────────────────────────────────
+// ── Monarch Mode & Shadow Army ─────────────────────────────────
 export interface ShadowSoldier {
   id: string;
   name: string;
-  rank: TaskDifficulty;
-  power: number;
-  extractedFrom: string;
+  tier: HunterRank;
+  sourceType: 'PR' | 'ProgramClear' | 'Chance';
+  extractedAt: number;
+  power?: number;
 }
+

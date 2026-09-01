@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
-import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, withSpring, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import { SystemTheme } from '../../theme/SystemTheme';
 import { Stat, STAT_COLORS, STAT_XP_PER_POINT } from '../../types';
 import TerminalText from '../system/TerminalText';
@@ -15,11 +15,24 @@ export default function StatBar({ stat, level, currentXp }: Props) {
   const color = STAT_COLORS[stat];
   const progressPercent = Math.min(100, Math.max(0, (currentXp / STAT_XP_PER_POINT) * 100));
 
+  const flashOpacity = useSharedValue(1);
+
+  useEffect(() => {
+    // Stat point level up pulse animation
+    flashOpacity.value = withSequence(
+      withTiming(0.2, { duration: 150 }),
+      withTiming(1, { duration: 300 }),
+      withTiming(0.4, { duration: 150 }),
+      withTiming(1, { duration: 300 })
+    );
+  }, [level]);
+
   const animatedStyle = useAnimatedStyle(() => ({
     width: withSpring(`${progressPercent}%`, {
       damping: 15,
       stiffness: 100,
     }),
+    opacity: flashOpacity.value,
   }));
 
   return (
@@ -34,7 +47,7 @@ export default function StatBar({ stat, level, currentXp }: Props) {
         <Text style={styles.xpText}>{Math.floor(currentXp)} / {STAT_XP_PER_POINT} XP</Text>
       </View>
       <View style={styles.track}>
-        <Animated.View style={[styles.fill, { backgroundColor: color }, animatedStyle]} />
+        <Animated.View style={[styles.fill, { backgroundColor: color, shadowColor: color }, animatedStyle]} />
       </View>
     </View>
   );

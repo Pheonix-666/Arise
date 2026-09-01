@@ -15,12 +15,20 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ExerciseDetail'>;
 
+const DIFFICULTY_RANK_MAP: Record<string, string> = {
+  Beginner: 'E-RANK',
+  Intermediate: 'C-RANK',
+  Advanced: 'A-RANK',
+};
+
 export default function ExerciseDetail({ route, navigation }: Props) {
   const { exerciseId } = route.params;
   const exercise = EXERCISE_BY_ID[exerciseId];
   const pr = useStore(s => s.personalRecords[exerciseId]);
 
   if (!exercise) return null;
+
+  const rankDifficulty = DIFFICULTY_RANK_MAP[exercise.difficulty] || `${exercise.difficulty.toUpperCase()}-RANK`;
 
   return (
     <View style={styles.root}>
@@ -37,7 +45,7 @@ export default function ExerciseDetail({ route, navigation }: Props) {
               <View style={styles.tagRow}>
                 <View style={styles.tag}><Text style={styles.tagText}>{exercise.muscleGroup}</Text></View>
                 <View style={styles.tag}><Text style={styles.tagText}>{exercise.equipment}</Text></View>
-                <View style={styles.tag}><Text style={styles.tagText}>{exercise.difficulty}</Text></View>
+                <View style={[styles.tag, { borderColor: SystemTheme.colors.primary, borderWidth: 1 }]}><Text style={[styles.tagText, { color: SystemTheme.colors.primary }]}>{rankDifficulty}</Text></View>
               </View>
 
               <View style={styles.statGrid}>
