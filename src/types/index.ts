@@ -17,23 +17,8 @@ export type RootStackParamList = {
   MonarchHome: undefined;
 };
 
-// ── Fitness Tab Stack ──────────────────────────────────────────
-export type FitnessTabParamList = {
-  FitnessHome: undefined;
-  ExerciseLibrary: undefined;
-  Programs: undefined;
-  WorkoutHistory: undefined;
-  PRTracker: undefined;
-};
-
-import { CompositeNavigationProp } from '@react-navigation/native';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
-export type FitnessTabScreenProp<T extends keyof FitnessTabParamList> = CompositeNavigationProp<
-  BottomTabNavigationProp<FitnessTabParamList, T>,
-  NativeStackNavigationProp<RootStackParamList>
->;
+export type FitnessTab = 'home' | 'exercises' | 'programs' | 'history' | 'prs';
+export type AppView = 'mode-select' | 'fitness' | 'tasks' | 'monarch' | 'active-session' | 'session-summary';
 
 // ── App Modes ──────────────────────────────────────────────────
 export type AppMode = 'fitness' | 'task' | 'monarch';
