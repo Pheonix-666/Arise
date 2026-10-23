@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useStore } from '../store/useStore';
-import { PROGRAM_BY_ID } from '../data/programs';
-import { EXERCISE_BY_ID } from '../data/exercises';
-import { systemSound } from '../utils/sound';
+import { useRouter } from 'next/navigation';
+import { useStore } from '../../../store/useStore';
+import { PROGRAM_BY_ID } from '../../../data/programs';
+import { EXERCISE_BY_ID } from '../../../data/exercises';
+import { systemSound } from '../../../utils/sound';
 import {
   Timer,
   Play,
@@ -17,17 +18,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
-interface ActiveWorkoutModalProps {
-  onFinish: (result: {
-    sessionId: string;
-    prsHit: string[];
-    totalXp: number;
-    extractedShadow: any;
-    leveledUp: boolean;
-  }) => void;
-}
-
-export default function ActiveWorkoutModal({ onFinish }: ActiveWorkoutModalProps) {
+export default function RaidPage() {
+  const router = useRouter();
   const {
     activeSession,
     logSet,
@@ -35,6 +27,7 @@ export default function ActiveWorkoutModal({ onFinish }: ActiveWorkoutModalProps
     cancelWorkout,
     finishWorkout,
     personalRecords,
+    setPendingSummary,
   } = useStore();
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -48,19 +41,12 @@ export default function ActiveWorkoutModal({ onFinish }: ActiveWorkoutModalProps
   const [restTotalSeconds, setRestTotalSeconds] = useState(60);
   const [isRestActive, setIsRestActive] = useState(false);
 
-  // Active Program and Exercises
-  const program = activeSession.programId ? PROGRAM_BY_ID[activeSession.programId] : null;
-  const currentDay = program?.days.find((d) => d.name === activeSession.dayName) || program?.days[0];
-  const plannedExercises = currentDay?.exercises || [];
-
-  const currentPlannedEx = plannedExercises[currentExIndex];
-  const currentEx = currentPlannedEx ? EXERCISE_BY_ID[currentPlannedEx.exerciseId] : null;
-
-  // Previous PR for ghost stats
-  const ghostPr = currentEx ? personalRecords[currentEx.id] : null;
-
-  // Filter sets logged for current exercise
-  const currentExSets = activeSession.sets.filter((s) => s.exerciseId === currentEx?.id);
+  // Redirect to /missions if no active session
+  useEffect(() => {
+    if (!activeSession.isActive) {
+      router.replace('/missions');
+    }
+  }, [activeSession.isActive, router]);
 
   // Track session timer
   useEffect(() => {
@@ -90,7 +76,23 @@ export default function ActiveWorkoutModal({ onFinish }: ActiveWorkoutModalProps
     return () => clearInterval(timer);
   }, [isRestActive, restSecondsLeft]);
 
-  if (!activeSession.isActive) return null;
+  if (!activeSession.isActive) {
+    return null;
+  }
+
+  // Active Program and Exercises
+  const program = activeSession.programId ? PROGRAM_BY_ID[activeSession.programId] : null;
+  const currentDay = program?.days.find((d) => d.name === activeSession.dayName) || program?.days[0];
+  const plannedExercises = currentDay?.exercises || [];
+
+  const currentPlannedEx = plannedExercises[currentExIndex];
+  const currentEx = currentPlannedEx ? EXERCISE_BY_ID[currentPlannedEx.exerciseId] : null;
+
+  // Previous PR for ghost stats
+  const ghostPr = currentEx ? personalRecords[currentEx.id] : null;
+
+  // Filter sets logged for current exercise
+  const currentExSets = activeSession.sets.filter((s) => s.exerciseId === currentEx?.id);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -105,17 +107,18 @@ export default function ActiveWorkoutModal({ onFinish }: ActiveWorkoutModalProps
     const w = parseFloat(weightInput);
     const r = parseInt(repsInput, 10);
 
-    if (isNaN(w) && isNaN(r)) return;
+    if (isNaN(w) || isNaN(r) || r <= 0) {
+      alert('Please enter valid numeric values for weight and reps.');
+      return;
+    }
 
     logSet({
       exerciseId: currentEx.id,
-      weight: isNaN(w) ? undefined : w,
-      reps: isNaN(r) ? undefined : r,
+      weight: w,
+      reps: r,
     });
 
     setCombo((c) => c + 1);
-    setWeightInput('');
-    setRepsInput('');
 
     // Trigger Rest Timer
     const rest = currentPlannedEx?.restSeconds || currentEx.restSeconds || 60;
@@ -129,18 +132,20 @@ export default function ActiveWorkoutModal({ onFinish }: ActiveWorkoutModalProps
       if (!confirm('No sets logged yet. Complete Gate Raid anyway?')) return;
     }
     const result = finishWorkout();
-    onFinish(result);
+    setPendingSummary(result);
+    router.push('/missions');
   };
 
   const handleCancel = () => {
     if (confirm('SYSTEM WARNING: Abort Gate Raid? All unlogged sets will be discarded.')) {
       cancelWorkout();
+      router.push('/missions');
     }
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="cyber-panel cyber-panel-corner modal-box" style={{ maxWidth: '780px' }}>
+    <div style={{ width: '100%', padding: '4px 0' }}>
+      <div className="cyber-panel cyber-panel-corner" style={{ padding: '20px' }}>
         {/* Header Console */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', paddingBottom: '14px', borderBottom: '1px solid var(--border-dim)' }}>
           <div>
@@ -185,123 +190,121 @@ export default function ActiveWorkoutModal({ onFinish }: ActiveWorkoutModalProps
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
               <button
-                onClick={() => setRestSecondsLeft((prev) => prev + 30)}
+                onClick={() => setRestSecondsLeft((s) => s + 30)}
                 className="hud-icon-btn"
+                title="Add 30 seconds"
               >
                 +30s
               </button>
               <button
-                onClick={() => setIsRestActive((prev) => !prev)}
-                className="hud-icon-btn"
+                onClick={() => setIsRestActive(false)}
+                className="hud-icon-btn hud-icon-btn-danger"
+                title="Skip Rest"
               >
-                {isRestActive ? <Pause size={12} /> : <Play size={12} />}
-                {isRestActive ? 'Pause' : 'Resume'}
-              </button>
-              <button
-                onClick={() => {
-                  setIsRestActive(false);
-                  setRestSecondsLeft(0);
-                }}
-                className="btn-cyber-primary"
-                style={{ padding: '6px 12px', fontSize: '0.72rem', background: 'var(--purple-secondary)', borderColor: 'var(--purple-secondary)', color: '#fff' }}
-              >
-                Skip Rest
+                SKIP REST
               </button>
             </div>
           </div>
         )}
 
-        {/* Current Exercise Console */}
-        {currentEx ? (
-          <div style={{ margin: '16px 0', padding: '16px', borderRadius: '6px', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--border-dim)' }}>
-            {/* Exercise Navigator */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <button
-                onClick={() => setCurrentExIndex((i) => Math.max(0, i - 1))}
-                disabled={currentExIndex === 0}
-                className="hud-icon-btn"
-                style={{ opacity: currentExIndex === 0 ? 0.3 : 1 }}
-              >
-                <ChevronLeft size={16} />
-              </button>
+        {/* Planned Exercises Navigation */}
+        {plannedExercises.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '16px 0 12px' }}>
+            <button
+              onClick={() => setCurrentExIndex((i) => Math.max(0, i - 1))}
+              disabled={currentExIndex === 0}
+              className="hud-icon-btn"
+              style={{ opacity: currentExIndex === 0 ? 0.3 : 1 }}
+            >
+              <ChevronLeft size={16} /> PREV
+            </button>
 
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>
-                <span style={{ color: 'var(--text-muted)' }}>EXERCISE </span>
-                <span style={{ color: 'var(--cyan-primary)', fontWeight: 800 }}>
-                  {currentExIndex + 1} OF {plannedExercises.length}
-                </span>
-              </div>
-
-              <button
-                onClick={() => setCurrentExIndex((i) => Math.min(plannedExercises.length - 1, i + 1))}
-                disabled={currentExIndex === plannedExercises.length - 1}
-                className="hud-icon-btn"
-                style={{ opacity: currentExIndex === plannedExercises.length - 1 ? 0.3 : 1 }}
-              >
-                <ChevronRight size={16} />
-              </button>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--cyan-primary)', fontWeight: 800 }}>
+              OBJECTIVE {currentExIndex + 1} OF {plannedExercises.length}
             </div>
 
-            {/* Exercise Title & Ghost PR */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', margin: '12px 0' }}>
+            <button
+              onClick={() => setCurrentExIndex((i) => Math.min(plannedExercises.length - 1, i + 1))}
+              disabled={currentExIndex === plannedExercises.length - 1}
+              className="hud-icon-btn"
+              style={{ opacity: currentExIndex === plannedExercises.length - 1 ? 0.3 : 1 }}
+            >
+              NEXT <ChevronRight size={16} />
+            </button>
+          </div>
+        )}
+
+        {/* Current Exercise Card */}
+        {currentEx ? (
+          <div style={{ padding: '16px', borderRadius: '6px', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="rank-badge rank-C">
+                  {currentEx.muscleGroup.toUpperCase()} // {currentEx.equipment}
+                </span>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', marginTop: '6px' }}>
                   {currentEx.name}
-                  <span className="rank-badge rank-C" style={{ fontSize: '0.65rem' }}>
-                    {currentEx.muscleGroup}
-                  </span>
                 </h3>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '4px' }}>
-                  Target: {currentPlannedEx?.sets || 3} Sets × {currentPlannedEx?.reps || '8-12'} Reps
-                </div>
               </div>
 
               {ghostPr && (
-                <div style={{ padding: '6px 12px', borderRadius: '4px', border: '1px solid rgba(251,191,36,0.3)', background: 'rgba(251,191,36,0.08)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', textAlign: 'right' }}>
-                  <span style={{ color: 'var(--amber-gold)', fontWeight: 800, display: 'block' }}>GHOST RECORD (PR)</span>
-                  <span style={{ color: '#fff' }}>{ghostPr.bestWeight}kg × {ghostPr.bestReps} reps</span>
+                <div style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--amber-gold)', fontWeight: 800 }}>
+                    ★ BENCHMARK PR
+                  </span>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff' }}>
+                    {ghostPr.bestWeight}kg × {ghostPr.bestReps}
+                  </div>
                 </div>
               )}
             </div>
 
+            {/* Target Recommendation */}
+            {currentPlannedEx && (
+              <div style={{ margin: '10px 0', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-dim)', background: 'rgba(255,255,255,0.03)', padding: '6px 10px', borderRadius: '4px' }}>
+                Protocol Prescription: <span style={{ color: 'var(--cyan-primary)', fontWeight: 700 }}>{currentPlannedEx.sets} sets × {currentPlannedEx.reps} reps</span>
+                {currentPlannedEx.note && <span> — {currentPlannedEx.note}</span>}
+              </div>
+            )}
+
             {/* Set Input Form */}
-            <form onSubmit={handleLogSet} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', margin: '16px 0', alignItems: 'flex-end' }}>
-              <div>
-                <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: '4px' }}>
-                  WEIGHT (KG)
+            <form onSubmit={handleLogSet} style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', flexWrap: 'wrap', marginTop: '14px' }}>
+              <div style={{ flex: 1, minWidth: '100px' }}>
+                <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                  LOAD (KG)
                 </label>
                 <input
                   type="number"
-                  step="0.5"
-                  placeholder={ghostPr?.bestWeight ? `${ghostPr.bestWeight}` : '0'}
+                  step="any"
+                  placeholder="0.0"
                   value={weightInput}
                   onChange={(e) => setWeightInput(e.target.value)}
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: '4px', background: 'rgba(0,0,0,0.6)', border: '1px solid var(--border-dim)', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', outline: 'none' }}
+                  style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.8)', border: '1px solid var(--border-dim)', borderRadius: '4px', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '0.9rem', outline: 'none' }}
                 />
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: '4px' }}>
-                  REPS PERFORMED
+              <div style={{ flex: 1, minWidth: '100px' }}>
+                <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                  REPETITIONS
                 </label>
                 <input
                   type="number"
-                  placeholder={currentPlannedEx?.reps || '10'}
+                  placeholder="0"
                   value={repsInput}
                   onChange={(e) => setRepsInput(e.target.value)}
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: '4px', background: 'rgba(0,0,0,0.6)', border: '1px solid var(--border-dim)', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', outline: 'none' }}
+                  style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.8)', border: '1px solid var(--border-dim)', borderRadius: '4px', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '0.9rem', outline: 'none' }}
                 />
               </div>
 
               <button
                 type="submit"
                 className="btn-cyber-primary"
-                style={{ padding: '10px 16px' }}
+                style={{ padding: '10px 18px', height: '44px', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
                 <Plus size={16} />
-                LOG SET
+                LOG SET_
               </button>
             </form>
 
@@ -319,7 +322,7 @@ export default function ActiveWorkoutModal({ onFinish }: ActiveWorkoutModalProps
 
               {currentExSets.length === 0 ? (
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '6px 0' }}>
-                  No sets logged yet for {currentEx.name}. Enter weight and reps above.
+                  No sets logged yet for {currentEx.name}. Enter load and reps above.
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

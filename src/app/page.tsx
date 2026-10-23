@@ -1,75 +1,106 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import Link from 'next/link';
 import { useStore } from '../store/useStore';
-import HeaderHUD from '../components/HeaderHUD';
-import MobileBottomNav from '../components/MobileBottomNav';
-import FitnessView from '../components/FitnessView';
-import QuestsView from '../components/QuestsView';
-import MonarchView from '../components/MonarchView';
-import ActiveWorkoutModal from '../components/ActiveWorkoutModal';
-import SummaryModal from '../components/SummaryModal';
+import { PROGRAM_BY_ID } from '../data/programs';
+import { Activity, ListTodo, Swords, Crown, ChevronRight, Shield } from 'lucide-react';
 
 export default function Home() {
-  const { activeMode, setActiveMode, startWorkout } = useStore();
-  const [isMounted, setIsMounted] = useState(false);
-  const [summaryData, setSummaryData] = useState<any | null>(null);
+  const { user, quests, fitnessProfile } = useStore();
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const activeProgram = fitnessProfile.activeProgramId
+    ? PROGRAM_BY_ID[fitnessProfile.activeProgramId]
+    : null;
 
-  if (!isMounted) {
-    return (
-      <div className="mobile-app-shell" style={{ justifyContent: 'center', alignItems: 'center', textAlign: 'center', fontFamily: 'var(--font-mono)', color: 'var(--cyan-primary)' }}>
-        <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid var(--cyan-primary)', borderTopColor: 'transparent', animation: 'spin 1s linear infinite', marginBottom: '16px' }} />
-        <span style={{ fontSize: '0.8rem', letterSpacing: '2px' }}>
-          INITIALIZING SYSTEM PROTOCOL...
-        </span>
-      </div>
-    );
-  }
-
-  const handleStartWorkout = (programId?: string, dayName?: string) => {
-    startWorkout(programId, dayName);
-  };
-
-  const handleWorkoutFinished = (result: any) => {
-    setSummaryData(result);
-  };
+  const completedQuestsCount = quests.filter((q) => q.completed).length;
+  const shadowCount = fitnessProfile.shadowRoster?.length || 0;
 
   return (
-    <div className="mobile-app-shell">
-      {/* Mobile Top Header HUD */}
-      <HeaderHUD />
+    <div style={{ width: '100%', padding: '4px 0' }}>
+      {/* System Hub Header */}
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', fontWeight: 700, color: 'var(--cyan-primary)' }}>
+          <Shield size={14} /> [ SYSTEM GATEWAY // COMMAND HUB ]
+        </div>
+        <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', marginTop: '4px', letterSpacing: '0.5px' }}>
+          HUNTER COMMAND NEXUS
+        </h1>
+        <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+          Select a subsystem below to inspect attributes, undertake quests, or engage dungeon gates.
+        </p>
+      </div>
 
-      {/* Main Mobile Content Area */}
-      <main className="mobile-content-area">
-        {activeMode === 'fitness' && (
-          <FitnessView
-            onStartWorkout={handleStartWorkout}
-            onOpenMonarch={() => setActiveMode('monarch')}
-          />
-        )}
+      {/* 2x2 Hub Grid */}
+      <div className="hub-grid">
+        {/* Tile 1: STATUS */}
+        <Link href="/profile" className="cyber-panel cyber-panel-corner hub-tile">
+          <div className="hub-tile-top">
+            <div className="hub-icon-wrap status-accent">
+              <Activity size={20} />
+            </div>
+            <ChevronRight size={16} className="hub-arrow" />
+          </div>
+          <div className="hub-tile-body">
+            <div className="hub-tile-tag">ATTRIBUTES</div>
+            <h2 className="hub-tile-title">STATUS</h2>
+            <div className="hub-tile-status">
+              Lv. {user.level} · {user.xp} XP
+            </div>
+          </div>
+        </Link>
 
-        {activeMode === 'task' && <QuestsView />}
+        {/* Tile 2: DAILY */}
+        <Link href="/daily" className="cyber-panel cyber-panel-corner hub-tile">
+          <div className="hub-tile-top">
+            <div className="hub-icon-wrap daily-accent">
+              <ListTodo size={20} />
+            </div>
+            <ChevronRight size={16} className="hub-arrow" />
+          </div>
+          <div className="hub-tile-body">
+            <div className="hub-tile-tag">ROUTINE</div>
+            <h2 className="hub-tile-title">DAILY</h2>
+            <div className="hub-tile-status">
+              {completedQuestsCount} Cleared Today
+            </div>
+          </div>
+        </Link>
 
-        {activeMode === 'monarch' && <MonarchView />}
-      </main>
+        {/* Tile 3: MISSIONS */}
+        <Link href="/missions" className="cyber-panel cyber-panel-corner hub-tile">
+          <div className="hub-tile-top">
+            <div className="hub-icon-wrap missions-accent">
+              <Swords size={20} />
+            </div>
+            <ChevronRight size={16} className="hub-arrow" />
+          </div>
+          <div className="hub-tile-body">
+            <div className="hub-tile-tag">GATE COMBAT</div>
+            <h2 className="hub-tile-title">MISSIONS</h2>
+            <div className="hub-tile-status" title={activeProgram?.name || 'No Protocol'}>
+              {activeProgram?.name || 'No Protocol Assigned'}
+            </div>
+          </div>
+        </Link>
 
-      {/* Fixed Mobile Bottom Navigation Bar */}
-      <MobileBottomNav />
-
-      {/* Active Workout Console Overlay */}
-      <ActiveWorkoutModal onFinish={handleWorkoutFinished} />
-
-      {/* Post-Raid Summary Modal */}
-      {summaryData && (
-        <SummaryModal
-          data={summaryData}
-          onClose={() => setSummaryData(null)}
-        />
-      )}
+        {/* Tile 4: DOMAIN */}
+        <Link href="/domain" className="cyber-panel cyber-panel-corner hub-tile">
+          <div className="hub-tile-top">
+            <div className="hub-icon-wrap domain-accent">
+              <Crown size={20} />
+            </div>
+            <span className="hub-tile-badge">PREMIUM · SOON</span>
+          </div>
+          <div className="hub-tile-body">
+            <div className="hub-tile-tag">MONARCH THRONE</div>
+            <h2 className="hub-tile-title">DOMAIN</h2>
+            <div className="hub-tile-status">
+              {shadowCount} Shadows Commanded
+            </div>
+          </div>
+        </Link>
+      </div>
     </div>
   );
 }

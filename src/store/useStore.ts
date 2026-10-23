@@ -14,7 +14,9 @@ import {
   XP_PER_LEVEL,
   getRankForLevel,
   TaskDifficulty,
-  AppMode,
+  StatBlock,
+  Stat,
+  FinishWorkoutResult,
 } from '../types';
 import { applyStatXp, buildUpdatedPrs, calculateSessionXp, checkLevelUp } from '../utils/xpEngine';
 import { PROGRAM_BY_ID } from '../data/programs';
@@ -75,12 +77,11 @@ export const DIFFICULTY_XP: Record<TaskDifficulty, number> = {
 
 const DEFAULT_USER: UserProfile = {
   uid: 'hunter_01',
-  displayName: 'Sung Jin-Woo',
+  displayName: 'Hunter',
   level: 1,
   xp: 0,
   totalXp: 0,
   rank: 'E',
-  activeMode: 'fitness',
   createdAt: Date.now(),
 };
 
@@ -88,113 +89,15 @@ const DEFAULT_FITNESS_PROFILE: UserFitnessProfile = {
   activeProgramId: 'full_body_3x',
   currentProgramWeek: 1,
   currentProgramDayIndex: 0,
-  currentStreak: 3,
-  longestStreak: 5,
-  totalSessionsLogged: 2,
-  lifetimeFitnessXp: 450,
-  stats: { STR: 12, VIT: 11, AGI: 10, SENSE: 10 },
-  statXpProgress: { STR: 210, VIT: 140, AGI: 50, SENSE: 50 },
-  shadowRoster: [
-    {
-      id: 'init_shadow_1',
-      name: 'Shadow Infantry',
-      tier: 'E',
-      sourceType: 'Chance',
-      extractedAt: Date.now() - 86400000 * 2,
-      power: 240,
-    },
-    {
-      id: 'init_shadow_2',
-      name: 'Shadow Knight Igris',
-      tier: 'A',
-      sourceType: 'PR',
-      extractedAt: Date.now() - 86400000,
-      power: 1150,
-    },
-  ],
+  currentStreak: 0,
+  longestStreak: 0,
+  totalSessionsLogged: 0,
+  lifetimeFitnessXp: 0,
+  stats: { STR: 10, VIT: 10, AGI: 10, SENSE: 10 },
+  statXpProgress: { STR: 0, VIT: 0, AGI: 0, SENSE: 0 },
+  shadowRoster: [],
   lastGateClearWeek: undefined,
 };
-
-const SEED_QUESTS: Quest[] = [
-  {
-    id: 'q1',
-    title: 'Daily Protocol: 100 Push-ups',
-    description: 'Full range of motion. Chest must touch floor. The System demands consistency.',
-    difficulty: 'D',
-    xpReward: 100,
-    completed: false,
-    createdAt: Date.now() - 3600000,
-  },
-  {
-    id: 'q2',
-    title: 'Cognitive Enhancement: 30 Mins Tactical Reading',
-    description: 'Expand your mental acuity and strategic understanding.',
-    difficulty: 'E',
-    xpReward: 50,
-    completed: false,
-    createdAt: Date.now() - 7200000,
-  },
-  {
-    id: 'q3',
-    title: 'Mental Fortitude: Cold Shower Protocol',
-    description: '3 minutes freezing water conditioning. SENSE and VIT stat calibration.',
-    difficulty: 'C',
-    xpReward: 200,
-    completed: false,
-    createdAt: Date.now() - 10800000,
-  },
-  {
-    id: 'q4',
-    title: 'Dungeon Run: 5KM Endurance March',
-    description: 'Maintain zone 3 aerobic heart rate without stopping.',
-    difficulty: 'B',
-    xpReward: 400,
-    completed: false,
-    createdAt: Date.now() - 14400000,
-  },
-];
-
-const SEED_PRS: Record<string, PersonalRecord> = {
-  bench_press: {
-    exerciseId: 'bench_press',
-    bestWeight: 80,
-    bestReps: 6,
-    achievedDate: new Date(Date.now() - 86400000 * 3).toISOString(),
-    oneRepMax: 96,
-  },
-  squat: {
-    exerciseId: 'squat',
-    bestWeight: 100,
-    bestReps: 5,
-    achievedDate: new Date(Date.now() - 86400000 * 2).toISOString(),
-    oneRepMax: 117,
-  },
-  deadlift: {
-    exerciseId: 'deadlift',
-    bestWeight: 120,
-    bestReps: 4,
-    achievedDate: new Date(Date.now() - 86400000).toISOString(),
-    oneRepMax: 136,
-  },
-};
-
-const SEED_SESSIONS: WorkoutSession[] = [
-  {
-    id: 'ws_demo_1',
-    date: new Date(Date.now() - 86400000 * 2).toISOString(),
-    programId: 'full_body_3x',
-    programDayName: 'Day A — Full Body',
-    sets: [
-      { exerciseId: 'bench_press', setIndex: 0, weight: 80, reps: 6, completedAt: Date.now() - 86400000 * 2 },
-      { exerciseId: 'squat', setIndex: 1, weight: 100, reps: 5, completedAt: Date.now() - 86400000 * 2 },
-    ],
-    durationSeconds: 2450,
-    xpEarned: { STR: 180, VIT: 70 },
-    totalXp: 250,
-    prsHit: ['bench_press'],
-    synced: true,
-  },
-];
 
 interface ActiveSessionState {
   isActive: boolean;
@@ -213,9 +116,9 @@ export interface AppState {
   soundEnabled: boolean;
   toggleSound: () => void;
 
-  // Navigation mode
-  activeMode: AppMode;
-  setActiveMode: (mode: AppMode) => void;
+  // Post-Raid Summary
+  pendingSummary: FinishWorkoutResult | null;
+  setPendingSummary: (summary: FinishWorkoutResult | null) => void;
 
   // Quests
   quests: Quest[];
@@ -235,7 +138,7 @@ export interface AppState {
   startWorkout: (programId?: string, dayName?: string) => void;
   logSet: (set: Omit<SetLog, 'completedAt' | 'setIndex'>) => void;
   removeSet: (setIndex: number) => void;
-  finishWorkout: () => { sessionId: string; prsHit: string[]; totalXp: number; extractedShadow: ShadowSoldier | null; leveledUp: boolean };
+  finishWorkout: () => FinishWorkoutResult;
   cancelWorkout: () => void;
 
   // Monarch Awakening
@@ -259,13 +162,10 @@ export const useStore = create<AppState>()(
         if (next) systemSound.playClick();
       },
 
-      activeMode: 'fitness',
-      setActiveMode: (mode) => {
-        systemSound.playClick();
-        set({ activeMode: mode });
-      },
+      pendingSummary: null,
+      setPendingSummary: (summary) => set({ pendingSummary: summary }),
 
-      quests: SEED_QUESTS,
+      quests: [],
       addQuest: (title, description, difficulty) => {
         const newQuest: Quest = {
           id: `quest_${Date.now()}`,
@@ -312,8 +212,8 @@ export const useStore = create<AppState>()(
       },
 
       fitnessProfile: DEFAULT_FITNESS_PROFILE,
-      sessions: SEED_SESSIONS,
-      personalRecords: SEED_PRS,
+      sessions: [],
+      personalRecords: {},
       activeSession: {
         isActive: false,
         startTime: 0,
@@ -536,15 +436,197 @@ export const useStore = create<AppState>()(
         set({
           user: DEFAULT_USER,
           fitnessProfile: DEFAULT_FITNESS_PROFILE,
-          quests: SEED_QUESTS,
-          sessions: SEED_SESSIONS,
-          personalRecords: SEED_PRS,
+          quests: [],
+          sessions: [],
+          personalRecords: {},
           activeSession: { isActive: false, startTime: 0, sets: [] },
+          pendingSummary: null,
         });
       },
     }),
     {
       name: 'arise_system_store_v2',
+      version: 4,
+      migrate: (persistedState: unknown, version: number) => {
+        try {
+          if (!persistedState || typeof persistedState !== 'object') {
+            return {
+              user: DEFAULT_USER,
+              soundEnabled: true,
+              pendingSummary: null,
+              quests: [],
+              fitnessProfile: DEFAULT_FITNESS_PROFILE,
+              sessions: [],
+              personalRecords: {},
+              activeSession: { isActive: false, startTime: 0, sets: [] },
+            };
+          }
+
+          const rawState = persistedState as Record<string, unknown>;
+          let state = rawState;
+
+          if (version < 3) {
+            // 1. Remove seeded session 'ws_demo_1'
+            const rawSessions = Array.isArray(rawState.sessions)
+              ? (rawState.sessions as WorkoutSession[])
+              : [];
+            const sessions = rawSessions.filter(
+              (s): s is WorkoutSession => Boolean(s && s.id !== 'ws_demo_1')
+            );
+
+            // 2. PR exercise ids filter: remove 'bench_press', 'squat', 'deadlift' ONLY if achievedDate matches no real session
+            const seededPrIds = new Set(['bench_press', 'squat', 'deadlift']);
+            const rawPrs = rawState.personalRecords as Record<string, PersonalRecord> | undefined;
+            const personalRecords: Record<string, PersonalRecord> = {};
+
+            if (rawPrs && typeof rawPrs === 'object') {
+              for (const [key, pr] of Object.entries(rawPrs)) {
+                if (!pr || typeof pr !== 'object') continue;
+                if (seededPrIds.has(key)) {
+                  const prDate = pr.achievedDate;
+                  const matchesRealSession = sessions.some((s) => {
+                    if (!s.date || !prDate) return false;
+                    return s.date === prDate || s.date.startsWith(prDate) || prDate.startsWith(s.date);
+                  });
+                  if (!matchesRealSession) {
+                    continue; // drop seeded PR
+                  }
+                }
+                personalRecords[key] = pr;
+              }
+            }
+
+            // 3. Remove seeded quests: q1, q2, q3, q4
+            const seededQuestIds = new Set(['q1', 'q2', 'q3', 'q4']);
+            const rawQuests = Array.isArray(rawState.quests)
+              ? (rawState.quests as Quest[])
+              : [];
+            const quests = rawQuests.filter(
+              (q): q is Quest => Boolean(q && !seededQuestIds.has(q.id))
+            );
+
+            // 4. Remove seeded shadows: init_shadow_1, init_shadow_2
+            const seededShadowIds = new Set(['init_shadow_1', 'init_shadow_2']);
+            const rawFitness = rawState.fitnessProfile as Partial<UserFitnessProfile> | undefined;
+            const rawShadows = Array.isArray(rawFitness?.shadowRoster)
+              ? (rawFitness.shadowRoster as ShadowSoldier[])
+              : [];
+            const shadowRoster = rawShadows.filter(
+              (sh): sh is ShadowSoldier => Boolean(sh && !seededShadowIds.has(sh.id))
+            );
+
+            // 5. Recompute from what remains
+            const totalSessionsLogged = sessions.length;
+            const lifetimeFitnessXp = sessions.reduce((sum, s) => sum + (s.totalXp || 0), 0);
+
+            // Stats and statXpProgress from baseline 10 plus sum of session xpEarned via applyStatXp
+            const earnedStatXpTotals: Partial<Record<Stat, number>> = {
+              STR: 0,
+              VIT: 0,
+              AGI: 0,
+              SENSE: 0,
+            };
+            for (const session of sessions) {
+              if (session.xpEarned) {
+                for (const [statKey, xpVal] of Object.entries(session.xpEarned)) {
+                  if (typeof xpVal === 'number') {
+                    const sk = statKey as Stat;
+                    earnedStatXpTotals[sk] = (earnedStatXpTotals[sk] || 0) + xpVal;
+                  }
+                }
+              }
+            }
+            const baselineStats: StatBlock = { STR: 10, VIT: 10, AGI: 10, SENSE: 10 };
+            const baselineProgress: StatBlock = { STR: 0, VIT: 0, AGI: 0, SENSE: 0 };
+            const { newStats, newProgress } = applyStatXp(
+              baselineStats,
+              baselineProgress,
+              earnedStatXpTotals
+            );
+
+            // user.totalXp from sessions plus completed quests
+            const completedQuestXp = quests
+              .filter((q) => q.completed)
+              .reduce((sum, q) => sum + (q.xpReward || 0), 0);
+            const totalUserXp = lifetimeFitnessXp + completedQuestXp;
+
+            // user level/xp/rank from totalXp via checkLevelUp
+            const { newLevel, newXp } = checkLevelUp(1, 0, totalUserXp, XP_PER_LEVEL);
+            const newRank = getRankForLevel(newLevel).rank;
+
+            const rawUser = rawState.user as Partial<UserProfile> | undefined;
+
+            const updatedUser: UserProfile = {
+              uid: rawUser?.uid || DEFAULT_USER.uid,
+              displayName:
+                rawUser?.displayName && rawUser.displayName !== 'Sung Jin-Woo'
+                  ? rawUser.displayName
+                  : DEFAULT_USER.displayName,
+              level: newLevel,
+              xp: newXp,
+              totalXp: totalUserXp,
+              rank: newRank,
+              createdAt: rawUser?.createdAt || DEFAULT_USER.createdAt,
+            };
+
+            const updatedFitnessProfile: UserFitnessProfile = {
+              activeProgramId: rawFitness?.activeProgramId || DEFAULT_FITNESS_PROFILE.activeProgramId,
+              currentProgramWeek: rawFitness?.currentProgramWeek ?? DEFAULT_FITNESS_PROFILE.currentProgramWeek,
+              currentProgramDayIndex: rawFitness?.currentProgramDayIndex ?? DEFAULT_FITNESS_PROFILE.currentProgramDayIndex,
+              currentStreak: 0,
+              longestStreak: 0,
+              lastSessionDate: rawFitness?.lastSessionDate,
+              totalSessionsLogged,
+              lifetimeFitnessXp,
+              stats: newStats,
+              statXpProgress: newProgress,
+              shadowRoster,
+              lastGateClearWeek: rawFitness?.lastGateClearWeek,
+            };
+
+            state = {
+              ...state,
+              user: updatedUser,
+              fitnessProfile: updatedFitnessProfile,
+              quests,
+              sessions,
+              personalRecords,
+              activeSession: { isActive: false, startTime: 0, sets: [] },
+            };
+          }
+
+          if (version < 4) {
+            const { activeMode: _rootMode, ...restState } = state;
+            let cleanUser = DEFAULT_USER;
+            if (restState.user && typeof restState.user === 'object') {
+              const { activeMode: _userMode, ...rawUserClean } = restState.user as Record<string, unknown>;
+              cleanUser = {
+                ...DEFAULT_USER,
+                ...rawUserClean,
+              } as UserProfile;
+            }
+            state = {
+              ...restState,
+              user: cleanUser,
+              pendingSummary: null,
+            };
+          }
+
+          return state;
+        } catch (err) {
+          console.error('[System Store] Migration failed, falling back to defaults:', err);
+          return {
+            user: DEFAULT_USER,
+            soundEnabled: true,
+            pendingSummary: null,
+            quests: [],
+            fitnessProfile: DEFAULT_FITNESS_PROFILE,
+            sessions: [],
+            personalRecords: {},
+            activeSession: { isActive: false, startTime: 0, sets: [] },
+          };
+        }
+      },
       storage: createJSONStorage(() =>
         typeof window !== 'undefined'
           ? localStorage

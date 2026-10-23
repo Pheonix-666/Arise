@@ -2,18 +2,12 @@
 
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { ShadowSoldier } from '../types';
+import { FinishWorkoutResult, ShadowSoldier } from '../types';
 import { EXERCISE_BY_ID } from '../data/exercises';
 import { Trophy, Zap, Skull, ShieldCheck, ArrowRight } from 'lucide-react';
 
 interface SummaryModalProps {
-  data: {
-    sessionId: string;
-    prsHit: string[];
-    totalXp: number;
-    extractedShadow: ShadowSoldier | null;
-    leveledUp: boolean;
-  };
+  data: FinishWorkoutResult;
   onClose: () => void;
 }
 

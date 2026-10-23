@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import StoreHydrationGate from '../components/StoreHydrationGate';
+import AppShell from '../components/AppShell';
 
 export const metadata: Metadata = {
   title: 'ARISE // Solo Leveling Hunter System',
@@ -28,9 +30,11 @@ export default function RootLayout({
       <body className="antialiased">
         <div className="system-bg" />
         <div className="crt-scanlines" />
-        <main className="relative z-10 min-h-screen">
-          {children}
-        </main>
+        <StoreHydrationGate>
+          <AppShell>
+            {children}
+          </AppShell>
+        </StoreHydrationGate>
       </body>
     </html>
   );

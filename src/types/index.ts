@@ -1,25 +1,3 @@
-// ── Root Stack ─────────────────────────────────────────────────
-export type RootStackParamList = {
-  ModeSelect: undefined;
-  // Fitness stack
-  FitnessTabs: undefined;
-  ExerciseDetail: { exerciseId: string };
-  ProgramDetail: { programId: string };
-  ActiveProgram: undefined;
-  CustomProgramBuilder: { programId?: string };
-  WorkoutSession: { programId?: string; dayIndex?: number; exerciseIds?: string[] };
-  SessionSummary: { sessionId: string };
-  SessionDetail: { sessionId: string };
-  ShadowArmy: undefined;
-  BodyStats: undefined;
-  // Other modes
-  TaskHome: undefined;
-  MonarchHome: undefined;
-};
-
-export type FitnessTab = 'home' | 'exercises' | 'programs' | 'history' | 'prs';
-export type AppView = 'mode-select' | 'fitness' | 'tasks' | 'monarch' | 'active-session' | 'session-summary';
-
 // ── App Modes ──────────────────────────────────────────────────
 export type AppMode = 'fitness' | 'task' | 'monarch';
 
@@ -31,7 +9,6 @@ export interface UserProfile {
   xp: number;
   totalXp: number;
   rank: HunterRank;
-  activeMode: AppMode | null;
   createdAt: number;
 }
 
@@ -208,4 +185,14 @@ export interface ShadowSoldier {
   extractedAt: number;
   power?: number;
 }
+
+// ── Workout Completion ──────────────────────────────────────────
+export interface FinishWorkoutResult {
+  sessionId: string;
+  prsHit: string[];
+  totalXp: number;
+  extractedShadow: ShadowSoldier | null;
+  leveledUp: boolean;
+}
+
 
