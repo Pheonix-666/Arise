@@ -1,7 +1,5 @@
-'use client';
-
 import React from 'react';
-import MissionsSubNav from '../../components/MissionsSubNav';
+import MissionsSubNav from '@/sections/missions/MissionsSubNav';
 
 export default function MissionsLayout({
   children,

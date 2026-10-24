@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useStore, DIFFICULTY_XP } from '../store/useStore';
-import { TaskDifficulty } from '../types';
+import { useStore, DIFFICULTY_XP } from '@/store/useStore';
+import { TaskDifficulty } from '@/types';
 import {
   ListTodo,
   Plus,

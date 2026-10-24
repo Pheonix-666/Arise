@@ -1,6 +1,3 @@
-// ── App Modes ──────────────────────────────────────────────────
-export type AppMode = 'fitness' | 'task' | 'monarch';
-
 // ── User / Progression ─────────────────────────────────────────
 export interface UserProfile {
   uid: string;

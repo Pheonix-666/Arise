@@ -1,15 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useStore } from '../store/useStore';
-import { RANK_THRESHOLDS, ShadowSoldier } from '../types';
+import { useStore } from '@/store/useStore';
+import { RANK_THRESHOLDS, ShadowSoldier } from '@/types';
 import {
   Crown,
   Skull,
   Zap,
 } from 'lucide-react';
 
-export default function MonarchView() {
+export default function ShadowArmy() {
   const { fitnessProfile, summonAwakeningShadow } = useStore();
   const [extractedToast, setExtractedToast] = useState<ShadowSoldier | null>(null);
   const [isSummoning, setIsSummoning] = useState(false);
@@ -52,7 +52,7 @@ export default function MonarchView() {
               onClick={handleSummon}
               disabled={isSummoning}
               className="btn-cyber-crimson arise-card"
-              style={{ padding: '14px 28px', fontSize: '0.9rem' }}
+              style={{ padding: '12px 14px', fontSize: 'clamp(0.72rem, 3.2vw, 0.88rem)', width: '100%' }}
             >
               <Skull size={18} />
               {isSummoning ? 'CHANNELING MANA INTO THE VOID...' : '🌑 ARISE (일어나라) — SUMMON SHADOW_'}
@@ -63,7 +63,7 @@ export default function MonarchView() {
 
       {/* Extraction Toast Notification */}
       {extractedToast && (
-        <div className="cyber-panel arise-card" style={{ padding: '16px 20px', borderRadius: '6px', border: '2px solid var(--purple-secondary)', background: 'rgba(139,92,246,0.18)', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: 'var(--font-mono)' }}>
+        <div className="cyber-panel arise-card" style={{ padding: '14px 16px', borderRadius: '6px', border: '2px solid var(--purple-secondary)', background: 'rgba(139,92,246,0.18)', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', fontFamily: 'var(--font-mono)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ fontSize: '1.6rem' }}>⚡</span>
             <div>
@@ -79,7 +79,7 @@ export default function MonarchView() {
           <button
             onClick={() => setExtractedToast(null)}
             className="btn-cyber-outline"
-            style={{ padding: '6px 14px', fontSize: '0.75rem' }}
+            style={{ padding: '6px 14px', fontSize: '0.75rem', width: 'auto' }}
           >
             ACKNOWLEDGE
           </button>

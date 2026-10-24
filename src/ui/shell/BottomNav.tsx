@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Activity, ListTodo, Swords, Crown } from 'lucide-react';
 
-export default function MobileBottomNav() {
+export default function BottomNav() {
   const pathname = usePathname();
 
   // Hide bottom nav on full-screen active workout
@@ -14,10 +14,10 @@ export default function MobileBottomNav() {
   }
 
   const isHomeActive = pathname === '/';
-  const isStatusActive = pathname === '/profile';
-  const isDailyActive = pathname === '/daily';
+  const isProfileActive = pathname.startsWith('/profile');
+  const isDailyActive = pathname.startsWith('/daily');
   const isMissionsActive = pathname.startsWith('/missions');
-  const isDomainActive = pathname === '/domain';
+  const isPremiumActive = pathname.startsWith('/premium');
 
   return (
     <nav className="mobile-bottom-nav" aria-label="Main Navigation">
@@ -31,14 +31,14 @@ export default function MobileBottomNav() {
         <span>HOME</span>
       </Link>
 
-      {/* 2. STATUS */}
+      {/* 2. PROFILE */}
       <Link
         href="/profile"
-        className={`mobile-nav-item ${isStatusActive ? 'active-nav' : ''}`}
-        aria-current={isStatusActive ? 'page' : undefined}
+        className={`mobile-nav-item ${isProfileActive ? 'active-nav' : ''}`}
+        aria-current={isProfileActive ? 'page' : undefined}
       >
         <Activity size={18} />
-        <span>STATUS</span>
+        <span>PROFILE</span>
       </Link>
 
       {/* 3. DAILY */}
@@ -61,16 +61,16 @@ export default function MobileBottomNav() {
         <span>MISSIONS</span>
       </Link>
 
-      {/* 5. DOMAIN */}
+      {/* 5. PREMIUM */}
       <Link
-        href="/domain"
-        className={`mobile-nav-item ${isDomainActive ? 'active-nav' : ''}`}
-        aria-current={isDomainActive ? 'page' : undefined}
+        href="/premium"
+        className={`mobile-nav-item ${isPremiumActive ? 'active-nav' : ''}`}
+        aria-current={isPremiumActive ? 'page' : undefined}
         style={{ position: 'relative' }}
       >
-        <span className="nav-badge-soon">PREM · SOON</span>
+        <span className="nav-badge-soon">SOON</span>
         <Crown size={18} />
-        <span>DOMAIN</span>
+        <span>PREMIUM</span>
       </Link>
     </nav>
   );

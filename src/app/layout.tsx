@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import StoreHydrationGate from '../components/StoreHydrationGate';
-import AppShell from '../components/AppShell';
+import StoreHydrationGate from '@/ui/shell/StoreHydrationGate';
+import HeaderHUD from '@/ui/shell/HeaderHUD';
+import BottomNav from '@/ui/shell/BottomNav';
 
 export const metadata: Metadata = {
   title: 'ARISE // Solo Leveling Hunter System',
@@ -17,6 +18,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: 'cover',
   themeColor: '#030508',
 };
 
@@ -31,9 +33,13 @@ export default function RootLayout({
         <div className="system-bg" />
         <div className="crt-scanlines" />
         <StoreHydrationGate>
-          <AppShell>
-            {children}
-          </AppShell>
+          <div className="mobile-app-shell">
+            <HeaderHUD />
+            <main className="mobile-content-area">
+              {children}
+            </main>
+            <BottomNav />
+          </div>
         </StoreHydrationGate>
       </body>
     </html>

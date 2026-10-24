@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useStore } from '../store/useStore';
+import { useStore } from '@/store/useStore';
 
 export default function StoreHydrationGate({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
@@ -18,7 +18,7 @@ export default function StoreHydrationGate({ children }: { children: React.React
       setHydrated(true);
     });
 
-    // Double check in case it completed synchronously during mounting
+    // Fallback: check again in case hydration completed between calls
     if (useStore.persist?.hasHydrated?.()) {
       setHydrated(true);
     }

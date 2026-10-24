@@ -1,12 +1,19 @@
 'use client';
 
 import React from 'react';
-import { useStore } from '../store/useStore';
-import { RANK_THRESHOLDS, XP_PER_LEVEL } from '../types';
+import { usePathname } from 'next/navigation';
+import { useStore } from '@/store/useStore';
+import { RANK_THRESHOLDS, XP_PER_LEVEL } from '@/types';
 import { Volume2, VolumeX, RotateCcw, Sparkles } from 'lucide-react';
 
 export default function HeaderHUD() {
+  const pathname = usePathname();
   const { user, soundEnabled, toggleSound, resetToDefaults } = useStore();
+
+  // Hide on full-screen raid view
+  if (pathname === '/missions/raid') {
+    return null;
+  }
 
   const currentRankInfo = RANK_THRESHOLDS.find((r) => r.rank === user.rank) || RANK_THRESHOLDS[0];
   const nextRankInfo = RANK_THRESHOLDS.find((r) => r.minLevel > user.level);

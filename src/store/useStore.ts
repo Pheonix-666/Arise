@@ -627,6 +627,10 @@ export const useStore = create<AppState>()(
           };
         }
       },
+      partialize: (state) => {
+        const { pendingSummary: _omitted, ...persistedFields } = state;
+        return persistedFields;
+      },
       storage: createJSONStorage(() =>
         typeof window !== 'undefined'
           ? localStorage
